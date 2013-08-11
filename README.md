@@ -13,16 +13,18 @@ Features
   * User-defined key and value types
   * User-defined hash function and hash value type
   * Optional user-defined data inside the hashtable header (e.g. ref-counter)
-  * Optional value – when omitted, the hashtable is a set
+  * Optional value – when value is omitted, the hashtable is a set
 * No divisions or modulos
-* Small and readable source code (~300 lines) in standard C99.
+* Small and readable source code (~300 lines) in standard C.
 
 Notes
 -----
 
-The hashtable relies on two special values for keys: `OAHT_EMPTY_KEY` and `OAHT_DELETED_KEY`. The macro `OAHT_EMPTY_KEY` must always be represented zero (for practical reasons) while OAHT_DELETED_KEY may be defined to any value other than zero. These keys cannot be inserted into the hashtable.
+The library is implemented as a single header file and all functions are declared `static inline`. This is much more readable and maintailable than macros while being almost as generic. Generics is done by defining configuration macros prior to including the header file. The macros are described in a section below.
 
-This implementation is slightly modelled after CPython's dict object. (Source code: http://svn.python.org/view/python/trunk/Objects/dictobject.c?view=markup)
+The hashtable relies on two special values for keys: `OAHT_EMPTY_KEY` and `OAHT_DELETED_KEY`. The macro `OAHT_EMPTY_KEY` must always be represented as all bits zero (for practical reasons) while `OAHT_DELETED_KEY` may be defined to any non-zero value. These keys cannot be inserted into the hashtable.
+
+The hashtable is resized when it's 2/3 full, to keep the number of collissions low. This and some other design details are modelled after CPython's dict object. (Source code: http://svn.python.org/view/python/trunk/Objects/dictobject.c?view=markup)
 
 Example
 -------
@@ -56,8 +58,8 @@ int main() {
 }
 ```
 
-Functions
----------
+Function reference
+------------------
 
 **oaht_create**: Creates an empty hashtable with the minimum initial size.
 
@@ -123,34 +125,34 @@ oaht_add(struct oaht *a, OAHT_KEY_T key)
 Generics, configuration, tweaking
 ---------------------------------
 
-The library is implemented as a single header file. Configuration is done by defining macros prior to including the header file. The macros are described below. All configuration macros are optional and have defaults. The library is generic, but it can only be included once in each compilation unit.
+Configuration is done by defining macros prior to including `oaht.h`. All configuration macros are optional and have defaults. Though the library is generic, it can only be included once in each compilation unit.
 
 Types of keys, values and hash function:
 
-* OAHT_KEY_T: Type of the keys. Defaults to `int`.
-* OAHT_VALUE_T: Type of the values. Defauts to `void *`.
-* OAHT_SIZE_T: Type of sizes such as the number of elements in the table. Should be an integer type. Defaults to `unsigned int`.
-* OAHT_HASH(key): The hash function. Should take a key of type OAHT_KEY_T and return a value of type OAHT_HASH_T. Defaults to casting the key to OAHT_HASH_T.
-* OAHT_HASH_T: The type of hashes. This should be the return type of the hash function. Defaults to `int`.
-* OAHT_KEY_EQUALS(a, b): Takes two keys of type OAHT_KEY_T and should evaluate to non-zero if they are equal and to zero if they are not equal. Defaults to `a == b`.
-* OAHT_EMPTY_KEY: A special value of a key that represents an empty slot. This value must not be used as a key. Must be represented with all bits set to zero. Defaults to `0`.
-* OAHT_DELETED_KEY: A special value of a key that represents a deleted slot. This value must not be used as a key. Defaults to `-1`.
-* OAHT_IS_EMPTY_KEY(key): Check if a key is the empty key. Defaults to `key == OAHT_EMPTY_KEY`.
-* OAHT_IS_DELETED_KEY(key): Check if a key is the deleted key. Defaults to `key == OAHT_DELETED_KEY`.
-* OAHT_HEADER: If defined, this is included first in the `struct oaht`. Typical fields may include a type tag and a reference counter. Not defined by default.
-* OAHT_MIN_CAPACITY: Minimum and initial capacity. Defaults to `8`.
-* OAHT_NO_STORE_CACHE: Unless this macro is defined, the hash value is stored in the hashtable together with the key and the value, to avoid computing the hash more often. If this macro is defined, the hash function is used every time the hash value is needed. Define this macro if you have a very fast hash function (such as taking the key itself as the hash) or to optimize for memory.
-* OAHT_NO_VALUE: If this macro is defined, no value is stored together with the key and thus the hashtable is a set. The get and set functions are not defined. Instead, an add function is defined. The contains function is always defined.
+* `OAHT_KEY_T`: Type of the keys. Defaults to `int`.
+* `OAHT_VALUE_T`: Type of the values. Defauts to `void *`.
+* `OAHT_SIZE_T`: Type of sizes such as the number of elements in the table. Should be an integer type. Defaults to `unsigned int`.
+* `OAHT_HASH(key)`: The hash function. Should take a key of type `OAHT_KEY_T` and return a value of type `OAHT_HASH_T`. Defaults to casting the key to `OAHT_HASH_T`.
+* `OAHT_HASH_T`: The type of hashes. This should be the return type of the hash function. Defaults to `int`.
+* `OAHT_KEY_EQUALS(a, b)`: Takes two keys of type OAHT_KEY_T and should evaluate to non-zero if they are equal and to zero if they are not equal. Defaults to `a == b`.
+* `OAHT_EMPTY_KEY`: A special value of a key that represents an empty slot. This value must not be used as a key. Must be represented with all bits set to zero. Defaults to `0`.
+* `OAHT_DELETED_KEY`: A special value of a key that represents a deleted slot. This value must not be used as a key. Defaults to `-1`.
+* `OAHT_IS_EMPTY_KEY(key)`: Check if a key is the empty key. Defaults to `key == OAHT_EMPTY_KEY`.
+* `OAHT_IS_DELETED_KEY(key)`: Check if a key is the deleted key. Defaults to `key == OAHT_DELETED_KEY`.
+* `OAHT_HEADER`: If defined, this is included first in the `struct oaht`. Typical fields may include a type tag and a reference counter. Not defined by default.
+* `OAHT_MIN_CAPACITY`: Minimum and initial capacity. Defaults to `8`.
+* `OAHT_NO_STORE_HASH`: Unless this macro is defined, the hash value is stored in the hashtable together with the key and the value, to avoid computing the hash more often. If this macro is defined, the hash function is used every time the hash value is needed. Define this macro if you have a very fast hash function (such as taking the key itself as the hash) or to optimize for memory.
+* `OAHT_NO_VALUE`: If this macro is defined, no value is stored together with the key and thus the hashtable is a set. The get and set functions are not defined. Instead, an add function is defined. The contains function is always defined.
 
 Allocation macros. These default to malloc/realloc/free but may be defined to use custom allocation functions.
 
-* OAHT_ALLOC(size): Allocate n bytes. Defaults to `malloc(size)`.
-* OAHT_REALLOC(ptr, size, oldsize): Reallocate size bytes pointed to by `ptr`. The old size is provided to allow tracking memory usage. Defaults to `realloc(ptr, size)`.
-* OAHT_FREE(ptr, size): Free the memory pointed to by `ptr`. The size is provided to allow tracking memory usage. Defaults to `free(ptr)`.
+* `OAHT_ALLOC(size)`: Allocate n bytes. Defaults to `malloc(size)`.
+* `OAHT_REALLOC(ptr, size, oldsize)`: Reallocate size bytes pointed to by `ptr`. The old size is provided to allow tracking memory usage. Defaults to `realloc(ptr, size)`.
+* `OAHT_FREE(ptr, size)`: Free the memory pointed to by `ptr`. The size is provided to allow tracking memory usage. Defaults to `free(ptr)`.
 
-Error handling macros:
+Error handling macros.
 
-* OAHT_OOM(): This is called when a memory allocation fails. Must exit the program or longjmp out of the current function. Defaults to `exit(-1)`.
+* `OAHT_OOM()`: This is called when a memory allocation fails. Must exit the program or longjmp out of the current function. Defaults to `exit(-1)`.
 
 Choosing a hash function
 ------------------------
