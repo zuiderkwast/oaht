@@ -6,6 +6,7 @@
  */
 #ifndef OAHT_H
 #include <stdlib.h>
+#include <stddef.h> /* offsetof */
 #include <string.h>
 #include <assert.h>
 
@@ -69,6 +70,7 @@
  */
 #ifndef OAHT_EMPTY_KEY
 	#define OAHT_EMPTY_KEY (OAHT_KEY_T)0
+	#define OAHT_EMPTY_KEY_IS_ZERO 1
 #endif
 
 #ifndef OAHT_DELETED_KEY
@@ -143,7 +145,16 @@ oaht_create_presized(OAHT_SIZE_T min_size) {
 	mask = size - 1;
 	a = (struct oaht *)OAHT_ALLOC(oaht_sizeof(mask));
 	if (!a) OAHT_OOM();
+	#if defined(OAHT_EMPTY_KEY_IS_ZERO) && OAHT_EMPTY_KEY_IS_ZERO
 	memset(a, 0, oaht_sizeof(mask));
+	#else
+	memset(a, 0, offsetof(struct oaht, mask));
+	{
+		OAHT_SIZE_T i;
+		for (i = 0; i < size; i++)
+			a->els[i].key = OAHT_EMPTY_KEY;
+	}
+	#endif
 	a->mask = mask;
 	assert(OAHT_IS_EMPTY_KEY(a->els[0].key));
 	return a;
