@@ -22,7 +22,7 @@ Notes
 
 The library is implemented as a single header file and all functions are declared `static inline`. This is much more readable and maintailable than macros while being almost as generic. Generics is done by defining configuration macros prior to including the header file. The macros are described in a section below.
 
-The hashtable relies on two special values for keys: `OAHT_EMPTY_KEY` and `OAHT_DELETED_KEY`. These macro may be defined to any values of the key type and cannot be inserted into the hashtable. If `OAHT_EMPTY_KEY` is represented as all bits zero, you can also define `OAHT_EMPTY_KEY_IS_ZERO` to `1` to enable an optimization that uses memset to clear the memory of new hashtables.
+The hashtable relies on two special values for keys: `OAHT_EMPTY_KEY` and `OAHT_DELETED_KEY`. These macro may be defined to any values of the key type and cannot be inserted into the hashtable. If `OAHT_EMPTY_KEY` is represented as a repeated byte value, you should also define `OAHT_EMPTY_KEY_BYTE` to this byte value to enable an optimization that uses memset to clear the memory of new hashtables.
 
 The hashtable is resized when it's 2/3 full, to keep the number of collissions low. This and some other design details are modelled after CPython's dict object. (Source code: http://svn.python.org/view/python/trunk/Objects/dictobject.c?view=markup)
 

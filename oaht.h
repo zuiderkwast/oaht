@@ -87,12 +87,13 @@
 #endif
 
 /*
- * Macros for the special key values EMPTY and DELETED. An empty key must be
- * encoded as all bits zero.
+ * Macros for the special key values EMPTY and DELETED. If an empty key is
+ * represented by a repeted byte, define OAHT_EMPTY_KEY_BYTE to this value
+ * to allow memset to be used in the initialization of an empty hashtable.
  */
 #ifndef OAHT_EMPTY_KEY
 	#define OAHT_EMPTY_KEY (OAHT_KEY_T)0
-	#define OAHT_EMPTY_KEY_IS_ZERO 1
+	#define OAHT_EMPTY_KEY_BYTE 0
 #endif
 
 #ifndef OAHT_DELETED_KEY
@@ -167,8 +168,15 @@ oaht_create_presized(OAHT_SIZE_T min_size) {
 	mask = size - 1;
 	a = (struct oaht *)OAHT_ALLOC(oaht_sizeof(mask));
 	if (!a) OAHT_OOM();
-	#if defined(OAHT_EMPTY_KEY_IS_ZERO) && OAHT_EMPTY_KEY_IS_ZERO
+	#ifdef OAHT_EMPTY_KEY_BYTE
+	# if OAHT_EMPTY_KEY_BYTE == 0
 	memset(a, 0, oaht_sizeof(mask));
+	# else
+	memset(a, 0, offsetof(struct oaht, mask));
+	memset(a + offsetof(struct oaht, mask),
+	       OAHT_EMPTY_KEY_BYTE,
+	       oaht_sizeof(mask) - offsetof(struct oaht, mask));
+	# endif
 	#else
 	memset(a, 0, offsetof(struct oaht, mask));
 	{
