@@ -108,8 +108,25 @@
 	#define OAHT_IS_DELETED_KEY(key) (key == OAHT_DELETED_KEY)
 #endif
 
+/*
+ * Generics: prefix to use instead of 'oaht'. Defaults to oaht.
+ */
+#ifndef OAHT_PREFIX
+	#define OAHT_PREFIX oaht
+#endif
+
+/*
+ * Macros to expand the prefix.
+ */
+#undef OAHT_XXNAME
+#define OAHT_XXNAME(prefix, name) prefix ## name
+#undef OAHT_XNAME
+#define OAHT_XNAME(prefix, name) OAHT_XXNAME(prefix, name)
+#undef OAHT_NAME
+#define OAHT_NAME(name) OAHT_XNAME(OAHT_PREFIX, name)
+
 /* A key-value pair */
-struct oaht_entry {
+struct OAHT_NAME(_entry) {
 	#ifndef OAHT_NO_STORE_HASH
 	OAHT_HASH_T hash;
 	#endif
@@ -124,25 +141,26 @@ struct oaht_entry {
  *
  * There is always at least one EMPTY entry in a table.
  */
-struct oaht {
+struct OAHT_PREFIX {
 	#ifdef OAHT_HEADER
 	OAHT_HEADER
 	#endif
-	OAHT_SIZE_T fill;          /* the number of used + deleted entries */
-	OAHT_SIZE_T used;          /* the number of used entries */
-	OAHT_SIZE_T mask;          /* actual length of els - 1 */
-	struct oaht_entry els[1];  /* entries, allocated in-place */
+	OAHT_SIZE_T fill;                /* num used + deleted entries */
+	OAHT_SIZE_T used;                /* the number of used entries */
+	OAHT_SIZE_T mask;                /* actual length of els - 1 */
+	struct OAHT_NAME(_entry) els[1]; /* entries, allocated in-place */
 };
 
 /* Size to allocate for a struct oaht with mask mask. Used internally. */
 static inline size_t
-oaht_sizeof(OAHT_SIZE_T mask) {
-	return sizeof(struct oaht) + mask * sizeof(struct oaht_entry);
+OAHT_NAME(_sizeof)(OAHT_SIZE_T mask) {
+	return sizeof(struct OAHT_PREFIX) +
+		mask * sizeof(struct OAHT_NAME(_entry));
 }
 
 /* Used internally */
 static inline OAHT_HASH_T
-oaht_get_hash_of_entry(struct oaht_entry *e) {
+OAHT_NAME(_get_hash_of_entry)(struct OAHT_NAME(_entry) *e) {
 	#ifndef OAHT_NO_STORE_HASH
 	return e->hash;
 	#else
@@ -153,11 +171,11 @@ oaht_get_hash_of_entry(struct oaht_entry *e) {
 /*
  * Creates an empty hashtable of a given initial size.
  */
-static inline struct oaht *
-oaht_create_presized(OAHT_SIZE_T min_size) {
+static inline struct OAHT_PREFIX *
+OAHT_NAME(_create_presized)(OAHT_SIZE_T min_size) {
 	OAHT_SIZE_T size = OAHT_MIN_CAPACITY;
 	OAHT_SIZE_T mask;
-	struct oaht *a;
+	struct OAHT_PREFIX *a;
 	assert(min_size >= 0);
 	assert(OAHT_MIN_CAPACITY > 0);
 	/* Compute size, the smallest power of 2 >= min_size */
@@ -166,19 +184,20 @@ oaht_create_presized(OAHT_SIZE_T min_size) {
 		if (size < OAHT_MIN_CAPACITY) OAHT_OOM(); /* overflow */
 	}
 	mask = size - 1;
-	a = (struct oaht *)OAHT_ALLOC(oaht_sizeof(mask));
+	a = (struct OAHT_PREFIX *)OAHT_ALLOC(OAHT_NAME(_sizeof)(mask));
 	if (!a) OAHT_OOM();
 	#ifdef OAHT_EMPTY_KEY_BYTE
 	# if OAHT_EMPTY_KEY_BYTE == 0
-	memset(a, 0, oaht_sizeof(mask));
+	memset(a, 0, OAHT_NAME(_sizeof)(mask));
 	# else
-	memset(a, 0, offsetof(struct oaht, mask));
-	memset(a + offsetof(struct oaht, mask),
+	memset(a, 0, offsetof(struct OAHT_PREFIX, mask));
+	memset(a + offsetof(struct OAHT_PREFIX, mask),
 	       OAHT_EMPTY_KEY_BYTE,
-	       oaht_sizeof(mask) - offsetof(struct oaht, mask));
+	       OAHT_NAME(_sizeof)(mask) -
+	           offsetof(struct OAHT_PREFIX, mask));
 	# endif
 	#else
-	memset(a, 0, offsetof(struct oaht, mask));
+	memset(a, 0, offsetof(struct OAHT_PREFIX, mask));
 	{
 		OAHT_SIZE_T i;
 		for (i = 0; i < size; i++)
@@ -193,24 +212,24 @@ oaht_create_presized(OAHT_SIZE_T min_size) {
 /*
  * Creates an empty hashtable with the minimum initial size.
  */
-static inline struct oaht *
-oaht_create(void) {
-	return oaht_create_presized(OAHT_MIN_CAPACITY);
+static inline struct OAHT_PREFIX *
+OAHT_NAME(_create)(void) {
+	return OAHT_NAME(_create_presized)(OAHT_MIN_CAPACITY);
 }
 
 /*
  * Frees the memory.
  */
 static inline void
-oaht_destroy(struct oaht *a) {
-	OAHT_FREE(a, oaht_sizeof(a->mask));
+OAHT_NAME(_destroy)(struct OAHT_PREFIX *a) {
+	OAHT_FREE(a, OAHT_NAME(_sizeof)(a->mask));
 }
 
 /*
  * Returns the number of entries in the hashtable.
  */
 static inline OAHT_SIZE_T
-oaht_len(struct oaht *a) {
+OAHT_NAME(_len)(struct OAHT_PREFIX *a) {
 	return a->used;
 }
 
@@ -221,10 +240,10 @@ oaht_len(struct oaht *a) {
  *
  * This function is used by many of the other functions (set, get, delete).
  */
-static inline struct oaht_entry *
-oaht_lookup_helper(struct oaht *a, OAHT_KEY_T key, OAHT_HASH_T hash) {
+static inline struct OAHT_NAME(_entry) *
+OAHT_NAME(_lookup_helper)(struct OAHT_PREFIX *a, OAHT_KEY_T key, OAHT_HASH_T hash) {
 	OAHT_SIZE_T pos = hash & a->mask; /* initial probe */
-	struct oaht_entry *freeslot = NULL;
+	struct OAHT_NAME(_entry) *freeslot = NULL;
 	assert(!OAHT_IS_EMPTY_KEY(key));
 	assert(!OAHT_IS_DELETED_KEY(key));
 	/* This will always terminate as there is always one empty entry */
@@ -251,26 +270,26 @@ oaht_lookup_helper(struct oaht *a, OAHT_KEY_T key, OAHT_HASH_T hash) {
  * Allocate and copy the contents to a new memory area. Returns a pointer to
  * the new memory. Used internally.
  */
-static inline struct oaht *
-oaht_resize(struct oaht *a, OAHT_SIZE_T min_size) {
-	struct oaht *b = oaht_create_presized(min_size);
+static inline struct OAHT_PREFIX *
+OAHT_NAME(_resize)(struct OAHT_PREFIX *a, OAHT_SIZE_T min_size) {
+	struct OAHT_PREFIX *b = OAHT_NAME(_create_presized)(min_size);
 	OAHT_SIZE_T i;
 	/* copy user-defined header data */
 	#ifdef OAHT_HEADER
-	memcpy(b, a, offsetof(struct oaht, fill));
+	memcpy(b, a, offsetof(struct OAHT_PREFIX, fill));
 	#endif
 	/* set the used and fill values as they will be */
 	b->used = b->fill = a->used;
 	/* copy the entries */
 	for (i = 0; i <= a->mask; i++) {
-		struct oaht_entry *ea = &a->els[i];
-		struct oaht_entry *eb;
+		struct OAHT_NAME(_entry) *ea = &a->els[i];
+		struct OAHT_NAME(_entry) *eb;
 		if (OAHT_IS_EMPTY_KEY(ea->key)
 		    || OAHT_IS_DELETED_KEY(ea->key))
 			continue;
-		eb = oaht_lookup_helper(b, ea->key, oaht_get_hash_of_entry(ea));
+		eb = OAHT_NAME(_lookup_helper)(b, ea->key, OAHT_NAME(_get_hash_of_entry)(ea));
 		assert(OAHT_IS_EMPTY_KEY(eb->key));
-		memcpy(eb, ea, sizeof(struct oaht_entry));
+		memcpy(eb, ea, sizeof(struct OAHT_NAME(_entry)));
 	}
 	/* Free the memory of the old table */
 	OAHT_FREE(a, OAHT_SIZEOF(a->mask));
@@ -281,8 +300,8 @@ oaht_resize(struct oaht *a, OAHT_SIZE_T min_size) {
  * Check if a key exists. Returns 1 if it does, 0 if it doesn't.
  */
 static inline int
-oaht_contains(struct oaht *a, OAHT_KEY_T key) {
-	struct oaht_entry *e = oaht_lookup_helper(a, key, OAHT_HASH(key));
+OAHT_NAME(_contains)(struct OAHT_PREFIX *a, OAHT_KEY_T key) {
+	struct OAHT_NAME(_entry) *e = OAHT_NAME(_lookup_helper)(a, key, OAHT_HASH(key));
 	return !OAHT_IS_EMPTY_KEY(e->key) && !OAHT_IS_DELETED_KEY(e->key);
 }
 
@@ -293,8 +312,9 @@ oaht_contains(struct oaht *a, OAHT_KEY_T key) {
  * Fetch a value by its key. If it's not defined, default_value is returned.
  */
 static inline OAHT_VALUE_T
-oaht_get(struct oaht *a, OAHT_KEY_T key, OAHT_VALUE_T default_value) {
-	struct oaht_entry *entry = oaht_lookup_helper(a, key, OAHT_HASH(key));
+OAHT_NAME(_get)(struct OAHT_PREFIX *a, OAHT_KEY_T key, OAHT_VALUE_T default_value) {
+	struct OAHT_NAME(_entry) *entry =
+		OAHT_NAME(_lookup_helper)(a, key, OAHT_HASH(key));
 	return OAHT_IS_EMPTY_KEY(entry->key) || OAHT_IS_DELETED_KEY(entry->key)
 		? default_value : entry->value;
 }
@@ -305,10 +325,11 @@ oaht_get(struct oaht *a, OAHT_KEY_T key, OAHT_VALUE_T default_value) {
  * reallocated. (If the hash tables has been reallocated, the old memory has
  * been free'd.)
  */
-static inline struct oaht *
-oaht_set(struct oaht *a, OAHT_KEY_T key, OAHT_VALUE_T value) {
+static inline struct OAHT_PREFIX *
+OAHT_NAME(_set)(struct OAHT_PREFIX *a, OAHT_KEY_T key, OAHT_VALUE_T value) {
 	OAHT_HASH_T hash = OAHT_HASH(key);
-	struct oaht_entry *entry = oaht_lookup_helper(a, key, hash);
+	struct OAHT_NAME(_entry) *entry =
+		OAHT_NAME(_lookup_helper)(a, key, hash);
 	if (OAHT_IS_EMPTY_KEY(entry->key)) {
 		a->used++;
 		a->fill++;
@@ -321,7 +342,7 @@ oaht_set(struct oaht *a, OAHT_KEY_T key, OAHT_VALUE_T value) {
 	entry->value = value;
 	/* resize if 2/3 full */
 	if (a->fill * 3 >= (a->mask + 1) * 2)
-		return oaht_resize(a, (a->used > 50000 ? 2 : 4) * a->used);
+		return OAHT_NAME(_resize)(a, (a->used > 50000 ? 2 : 4) * a->used);
 	return a;
 }
 
@@ -336,10 +357,11 @@ oaht_set(struct oaht *a, OAHT_KEY_T key, OAHT_VALUE_T value) {
  *
  * (This is identical to the set function except there is no value.)
  */
-static inline struct oaht *
-oaht_add(struct oaht *a, OAHT_KEY_T key) {
+static inline struct OAHT_PREFIX *
+OAHT_NAME(_add)(struct OAHT_PREFIX *a, OAHT_KEY_T key) {
 	OAHT_HASH_T hash = OAHT_HASH(key);
-	struct oaht_entry *entry = oaht_lookup_helper(a, key, hash);
+	struct OAHT_NAME(_entry) *entry =
+		OAHT_NAME(_lookup_helper)(a, key, hash);
 	if (OAHT_IS_EMPTY_KEY(entry->key)) {
 		a->used++;
 		a->fill++;
@@ -351,7 +373,7 @@ oaht_add(struct oaht *a, OAHT_KEY_T key) {
 	entry->key   = key;
 	/* resize if 2/3 full */
 	if (a->fill * 3 >= (a->mask + 1) * 2)
-		return oaht_resize(a, (a->used > 50000 ? 2 : 4) * a->used);
+		return OAHT_NAME(_resize)(a, (a->used > 50000 ? 2 : 4) * a->used);
 	return a;
 }
 
@@ -363,9 +385,10 @@ oaht_add(struct oaht *a, OAHT_KEY_T key) {
  * reallocated. (If the hash tables has been reallocated, the old memory has
  * been free'd.)
  */
-static inline struct oaht *
-oaht_delete(struct oaht *a, OAHT_KEY_T key) {
-	struct oaht_entry *entry = oaht_lookup_helper(a, key, OAHT_HASH(key));
+static inline struct OAHT_PREFIX *
+OAHT_NAME(_delete)(struct OAHT_PREFIX *a, OAHT_KEY_T key) {
+	struct OAHT_NAME(_entry) *entry =
+		OAHT_NAME(_lookup_helper)(a, key, OAHT_HASH(key));
 	if (!OAHT_IS_EMPTY_KEY(entry->key) && !OAHT_IS_DELETED_KEY(entry->key)) {
 		entry->key = OAHT_DELETED_KEY;
 		a->used--;

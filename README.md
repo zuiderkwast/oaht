@@ -1,7 +1,7 @@
 oaht
 ====
 
-Open addressing hash table in C
+Generic open addressing hash table in C
 
 Features
 --------
@@ -10,6 +10,7 @@ Features
 * Linear probing
 * Using a single contiguous memory space for both header and contents
 * Highly configurable, e.g.
+  * User-defined prefix in names of types and functions
   * User-defined key and value types
   * User-defined hash function and hash value type
   * Optional user-defined data inside the hashtable header (e.g. ref-counter)
@@ -20,7 +21,11 @@ Features
 Notes
 -----
 
-The library is implemented as a single header file and all functions are declared `static inline`. This is much more readable and maintailable than macros while being almost as generic. Generics is done by defining configuration macros prior to including the header file. The macros are described in a section below.
+The library is implemented as a single header file and all functions are
+declared `static inline`. Generics is done by defining configuration macros
+prior to including the header file. It is possible to create multiple types
+of hashtables by including `oaht.h` multiple times, using different prefixes
+for the names. These macros are described in a section below.
 
 The hashtable relies on two special values for keys: `OAHT_EMPTY_KEY` and `OAHT_DELETED_KEY`. These macro may be defined to any values of the key type and cannot be inserted into the hashtable. If `OAHT_EMPTY_KEY` is represented as a repeated byte value, you should also define `OAHT_EMPTY_KEY_BYTE` to this byte value to enable an optimization that uses memset to clear the memory of new hashtables.
 
@@ -125,10 +130,16 @@ oaht_add(struct oaht *a, OAHT_KEY_T key)
 Generics, configuration, tweaking
 ---------------------------------
 
-Configuration is done by defining macros prior to including `oaht.h`. All configuration macros are optional and have defaults. Though the library is generic, it can only be included once in each compilation unit.
+Configuration is done by defining macros prior to including `oaht.h`. All
+configuration macros are optional and have defaults.
 
-Types of keys, values and hash function:
+You can include `oaht.h` more than once to create multiple types hashtables. To
+do so, you must first undefine `OAHT_H` and redefine `OAHT_PREFIX`. (You may
+also want to redefine other macros such as `OAHT_KEY_T` and `OAHT_VALUE_T`.)
 
+Macros for user-defined types of keys, values and hash function:
+
+* `OAHT_PREFIX`: The prefix to use in type names and function names. Defaults to `oaht`.
 * `OAHT_KEY_T`: Type of the keys. Defaults to `int`.
 * `OAHT_VALUE_T`: Type of the values. Defauts to `void *`.
 * `OAHT_SIZE_T`: Type of sizes such as the number of elements in the table. Should be an integer type. Defaults to `unsigned int`.
