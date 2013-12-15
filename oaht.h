@@ -158,6 +158,14 @@ OAHT_NAME(_sizeof)(OAHT_SIZE_T mask) {
 		mask * sizeof(struct OAHT_NAME(_entry));
 }
 
+/* Create a duplicate */
+static inline struct OAHT_PREFIX *
+OAHT_NAME(_clone)(struct OAHT_PREFIX *a) {
+	OAHT_SIZE_T size = OAHT_NAME(_sizeof)(a->mask);
+	struct OAHT_PREFIX *clone = (struct OAHT_PREFIX *)OAHT_ALLOC(size);
+	return memcpy(clone, a, size);
+}
+
 /* Used internally */
 static inline OAHT_HASH_T
 OAHT_NAME(_get_hash_of_entry)(struct OAHT_NAME(_entry) *e) {
