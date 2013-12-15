@@ -258,7 +258,7 @@ OAHT_NAME(_lookup_helper)(struct OAHT_PREFIX *a, OAHT_KEY_T key, OAHT_HASH_T has
 	while (1) {
 		if (OAHT_IS_EMPTY_KEY(a->els[pos].key))
 			return freeslot ? freeslot : &a->els[pos];
-		if (a->els[pos].key == key
+		if (OAHT_KEY_EQUALS(a->els[pos].key, key)
 		    || (
 		    	#ifndef OAHT_NO_STORE_HASH
 		    	a->els[pos].hash == hash &&
