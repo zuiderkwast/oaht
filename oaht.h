@@ -251,13 +251,13 @@ OAHT_NAME(_len)(struct OAHT_PREFIX *a) {
  */
 static inline OAHT_SIZE_T
 OAHT_NAME(_iter)(struct OAHT_PREFIX *a, OAHT_SIZE_T pos, OAHT_KEY_T *k, OAHT_VALUE_T *v) {
-	while (pos++ <= a->mask) {
+	for (; pos <= a->mask; pos++) {
 		if (OAHT_IS_EMPTY_KEY(a->els[pos].key) ||
 			OAHT_IS_DELETED_KEY(a->els[pos].key))
 			continue;
 		*k = a->els[pos].key;
 		*v = a->els[pos].value;
-		return pos;
+		return pos + 1;
 	}
 	/* There are no more entries. */
 	return 0;
