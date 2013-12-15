@@ -127,6 +127,18 @@ static inline struct oaht *
 oaht_add(struct oaht *a, OAHT_KEY_T key)
 ```
 
+**oaht_iter**: A function to iterate over the keys and values. Start by passing
+pos = 0. Pass the return value from the previous call to get the next entry.
+When 0 is returned, there are no more entries left.
+
+If a non-zero value is returned, k and v are assigned to point to a key and
+a value in the hashtable.
+
+```c
+static inline OAHT_SIZE_T
+oaht_iter(struct oaht *a, OAHT_SIZE_T pos, OAHT_KEY_T *k, OAHT_VALUE_T *v);
+```
+
 Generics, configuration, tweaking
 ---------------------------------
 

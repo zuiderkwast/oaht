@@ -242,6 +242,28 @@ OAHT_NAME(_len)(struct OAHT_PREFIX *a) {
 }
 
 /*
+ * A function to iterate over the keys and values. Start by passing pos = 0.
+ * Pass the return value as i to get the next entry. When 0 is returned, there
+ * is no more entry to get.
+ *
+ * If a non-zero value is returned, k and v are assigned to point to a key and
+ * a value in the hashtable.
+ */
+static inline OAHT_SIZE_T
+OAHT_NAME(_iter)(struct OAHT_PREFIX *a, OAHT_SIZE_T pos, OAHT_KEY_T *k, OAHT_VALUE_T *v) {
+	while (pos++ <= a->mask) {
+		if (OAHT_IS_EMPTY_KEY(a->els[pos].key) ||
+			OAHT_IS_DELETED_KEY(a->els[pos].key))
+			continue;
+		*k = a->els[pos].key;
+		*v = a->els[pos].value;
+		return pos;
+	}
+	/* There are no more entries. */
+	return 0;
+}
+
+/*
  * Lookup an entry by its key. Returns a pointer to an entry that can be
  * assigned to, to insert or replace a value in the table. If the returned
  * entry is EMPTY or DELETED, the key is not present in the table.
