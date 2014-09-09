@@ -188,7 +188,7 @@ OAHT_NAME(_create_presized)(OAHT_SIZE_T min_size) {
 	assert(OAHT_MIN_CAPACITY > 0);
 	/* Compute size, the smallest power of 2 >= min_size */
 	while (size < min_size) {
-		min_size *= 2;
+		size *= 2;
 		if (size < OAHT_MIN_CAPACITY) OAHT_OOM(); /* overflow */
 	}
 	mask = size - 1;

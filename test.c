@@ -18,8 +18,6 @@ static struct oaht * create_5_42_400_9(void) {
 	return ht;
 }
 
-
-
 void get_test(void) {
 	struct oaht * tab = create_5_42_400_9();
 	/* make sure the create stuff works */
@@ -64,9 +62,27 @@ void iter_empty_test(void) {
 	oaht_destroy(tab);
 }
 
+static inline int map_to_some_odd_number(int i) {
+	return ((i * 234) & 0xfffff) + 1;
+}
+
+void large_table_test(void) {
+	int i, n = 1000;
+	struct oaht * ht = oaht_create();
+	for (i = 0; i < n; i++) {
+		int k = map_to_some_odd_number(i);
+		ht = oaht_set(ht, k, i);
+	}
+	assert(oaht_len(ht) == 1000);
+	assert(oaht_get(ht, map_to_some_odd_number(0), -1) == 0);
+	assert(oaht_get(ht, map_to_some_odd_number(5), -1) == 5);
+	oaht_destroy(ht);
+}
+
 int main() {
 	get_test();
 	iter_test();
 	iter_empty_test();
+	large_table_test();
 	return 0;
 }
